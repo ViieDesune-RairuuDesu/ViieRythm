@@ -139,28 +139,45 @@ for (const file of slashFiles){
     if (LOAD_SLASH) commands.push(slashcmd.data.toJSON())
 }
 
-if (LOAD_SLASH) {
-    client.login(TOKEN)
-    const rest = new REST({ version: "9" }).setToken(TOKEN)
-    console.log("Deploying slash commands")
-    guilds.forEach(guild => {
-        rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild.id), {body: commands})
-        .then(() => {
-            console.log(`Successfully loaded to ${guild.name}!`)
-            process.exit(0)
-        })
-        .catch((err) => {
-            if (err){
-                console.log(err)
-                process.exit(1)
-            }
-        })
-    })
-}
-else {
+
     client.on("ready", () => {
         console.log(`Logged in as ${client.user.tag}`)
+
+    const Guilds = client.guilds.cache.map(guild => guild.id);
+    console.log(Guilds);
+
+    console.log("Redeploying slash commands")
+
+    client.guilds.cache.forEach(guild => {
+        try{
+            const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
+            for (const file of slashFiles){
+                const slashcmd = require(`./slash/${file}`)
+                client.slashcommands.set(slashcmd.data.name, slashcmd)
+                commands.push(slashcmd.data.toJSON())
+            }}catch(err){}
+
+            const rest = new REST({ version: "9" }).setToken(TOKEN)
+            rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild.id), {body: commands})
+            .then(() => {
+                console.log(`Successfully reloaded commands to ${guild.name}!`)
+            })
+
+            //Just to keep track of all guilds bot is in
+
+            fs.appendFile('./guilds.txt', content, err => {
+                if (err) {
+                console.error(err)
+                return
+                }
+                //file written successfully
+            })
+        .catch((err) => {
+        })
     })
+
+    })
+
     client.on("interactionCreate", (interaction) => {
         async function handleCommand() {
             if (!interaction.isCommand()) return
@@ -180,14 +197,16 @@ else {
         //Basically just use the load_slash code everytime bot joins new guild.  
         console.log(`Joined new guild: ${guild.name}`);
 
+        content = `${guild.name} : ${guild.id}`
+
         const ID = guild.id;
 
-        const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
+        try{const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
         for (const file of slashFiles){
             const slashcmd = require(`./slash/${file}`)
             client.slashcommands.set(slashcmd.data.name, slashcmd)
             commands.push(slashcmd.data.toJSON())
-        }
+        }}catch(err){}
 
         const rest = new REST({ version: "9" }).setToken(TOKEN)
         console.log("Deploying slash commands")
@@ -196,10 +215,5 @@ else {
             console.log(`Successfully loaded commands to ${guild.name}!`)
         })
         .catch((err) => {
-            if (err){
-                console.log(err)
-                process.exit(1)
-            }
         })
     });
-}
