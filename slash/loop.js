@@ -25,23 +25,21 @@ module.exports = {
 
 
         if (interaction.options.getSubcommand() === "start") {
-            if (!queue) return await interaction.editReply("There are no songs in the queue")
+            if (!queue) return await interaction.editReply("There are no songs in the queue!")
 
             queue.setRepeatMode(QueueRepeatMode.TRACK);
             const song = queue.current;
             embed
-            .setDescription(`**[${song.title}](${song.url})** has been looped!`)
+            .setDescription(`🔂**[${song.title}](${song.url})** has been looped!🔂`)
             .setThumbnail(song.thumbnail)
-            .setFooter({ text: `Duration: ${song.duration}`})
         } else if (interaction.options.getSubcommand() === "stop") {
-            if (!queue) return await interaction.editReply("There are no songs in the queue")
+            if (!queue) return await interaction.editReply("There are no songs in the queue!")
 
             queue.setRepeatMode(QueueRepeatMode.OFF);
             const song = queue.current;
             embed
-            .setDescription(`Looping **[${song.title}](${song.url})** has been stopped!`)
+            .setDescription(`🔁Looping **[${song.title}](${song.url})** has been stopped!🔁`)
             .setThumbnail(song.thumbnail)
-            .setFooter({ text: `Duration: ${song.duration}`})
         }
 
 

@@ -17,6 +17,7 @@
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "discord-api-types": "^0.33.0",
+    "discord-button-pages": "^1.1.9",
     "discord-buttons": "^4.0.0-deprecated",
     "discord-player": "^5.2.2",
     "discord.js": "^13.6.0",

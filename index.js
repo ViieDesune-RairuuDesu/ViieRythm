@@ -7,6 +7,7 @@ const { Player } = require("discord-player")
 const { SlashCommandBuilder } = require("@discordjs/builders")
 const { MessageEmbed } = require("discord.js")
 const { QueueRepeatMode } = require("discord-player")
+const { MessageButton, MessageActionRow } = require('discord.js')
 
 dotenv.config()
 const TOKEN = process.env.TOKEN
@@ -14,7 +15,10 @@ const TOKEN = process.env.TOKEN
 const LOAD_SLASH = process.argv[2] == "load"
 
 const CLIENT_ID = "945583047800152064"
-const GUILD_ID = "887526297230778408"
+//const GUILD_ID = "887526297230778408" //Lackeys
+const GUILD_ID = "979550861019738132" //Test
+const guilds = ["887526297230778408", "979550861019738132"]
+
 
 const client = new Discord.Client({
     intents: [
@@ -48,42 +52,74 @@ client.on('interactionCreate', async interaction => {
     let embed = new MessageEmbed()
 
 
-
     if (i.customId === 'Play_Loop') {
-        if (!queue) return await interaction.editReply("There are no songs in the queue")
+        if (!queue) return await i.reply("There are no songs in the queue")
 
         queue.setRepeatMode(QueueRepeatMode.TRACK);
         const song = queue.current;
         embed
-            .setDescription(`**[${song.title}](${song.url})** has been looped!`)
+            .setDescription(`🔂**[${song.title}](${song.url})** has been looped!🔂`)
             .setThumbnail(song.thumbnail)
-            .setFooter({ text: `Duration: ${song.duration}`})
 
         await i.reply({ embeds: [embed], components: [] });    
 	}
 
     else if (i.customId === 'Play_Unloop') {
-        if (!queue) return await interaction.editReply("There are no songs in the queue")
+        if (!queue) return await i.reply("There are no songs in the queue")
 
         queue.setRepeatMode(QueueRepeatMode.OFF);
         const song = queue.current;
         embed
-            .setDescription(`Looping **[${song.title}](${song.url})** has been stopped!`)
+            .setDescription(`🔁Looping **[${song.title}](${song.url})** has been stopped!🔁`)
             .setThumbnail(song.thumbnail)
-            .setFooter({ text: `Duration: ${song.duration}`})
 
         await i.reply({ embeds: [embed], components: [] });    
 	}
 
     else if (i.customId === 'Play_Shuffle') {
-        if (!queue) return await interaction.editReply("There are no songs in the queue")
+        if (!queue) return await i.reply("There are no songs in the queue!")
 
 		queue.shuffle()
-        await interaction.editReply(`The queue of ${queue.tracks.length} songs have been shuffled!`)
+
+        const totalPages = Math.ceil(queue.tracks.length / 10) || 1
+        
+        const queueString = queue.tracks.slice(1 * 10, 1 * 10 + 10).map((song, i) => {
+            return `**${1 * 10 + i + 1}.** \`[${song.duration}]\` ${song.title} -- <@${song.requestedBy.id}>`
+        }).join("\n")
+
+        const currentSong = queue.current
+
+        embed
+            .setDescription(`**🔀Shuffled Queue🔀 \n Playing Now:**\n` + 
+                (currentSong ? `\`[${currentSong.duration}]\` ${currentSong.title} -- <@${currentSong.requestedBy.id}>` : "None") +
+                `\n\n**Queue**\n${queueString}`
+                )
+            .setThumbnail(currentSong.setThumbnail)
+
+        await i.reply({ embeds: [embed], components: [] });    
 	}
 
-    else if (i.customId === 'Play_Loop') {
-        
+    else if (i.customId === 'Play_Info') {
+        const track = client.player.track;
+
+		if (!queue) return await i.reply({content: "There are no songs in the queue", ephemeral: true})
+
+		let bar = queue.createProgressBar({
+			queue: false,
+			length: 30,
+			line: '=',
+			indicator: '◉',
+		})
+
+        const song = queue.current
+		const ts = queue.getPlayerTimestamp();
+
+		await i.reply({
+			embeds: [new MessageEmbed()
+            .setThumbnail(song.thumbnail)
+            .setDescription(`<a:musicGIF:934584884696068176> Currently Playing: [${song.title}](${song.url}) || By: ${song.author} <a:musicGIF:934584884696068176>\n\n<a:clock:979661388890902528>Time: ${ts.current} / ${ts.end}<a:clock:979661388890902528> \n\n` + bar)
+			],
+		})
 	}
 
     else if (i.customId === 'Play_Loop') {
@@ -104,18 +140,21 @@ for (const file of slashFiles){
 }
 
 if (LOAD_SLASH) {
+    client.login(TOKEN)
     const rest = new REST({ version: "9" }).setToken(TOKEN)
     console.log("Deploying slash commands")
-    rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {body: commands})
-    .then(() => {
-        console.log("Successfully loaded")
-        process.exit(0)
-    })
-    .catch((err) => {
-        if (err){
-            console.log(err)
-            process.exit(1)
-        }
+    guilds.forEach(guild => {
+        rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild.id), {body: commands})
+        .then(() => {
+            console.log(`Successfully loaded to ${guild.name}!`)
+            process.exit(0)
+        })
+        .catch((err) => {
+            if (err){
+                console.log(err)
+                process.exit(1)
+            }
+        })
     })
 }
 else {
