@@ -132,38 +132,39 @@ client.on('interactionCreate', async interaction => {
 });
 //================================================
 
-const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
-for (const file of slashFiles){
-    const slashcmd = require(`./slash/${file}`)
-    client.slashcommands.set(slashcmd.data.name, slashcmd)
-    if (LOAD_SLASH) commands.push(slashcmd.data.toJSON())
-}
-
-
-    client.on("ready", () => {
-        console.log(`Logged in as ${client.user.tag}`)
+    client.on("ready", async () => {
+    console.log(`Logged in as ${client.user.tag}`)
 
     const Guilds = client.guilds.cache.map(guild => guild.id);
     console.log(Guilds);
 
     console.log("Redeploying slash commands")
 
-    client.guilds.cache.forEach(guild => {
-        try{
-            const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
-            for (const file of slashFiles){
-                const slashcmd = require(`./slash/${file}`)
-                client.slashcommands.set(slashcmd.data.name, slashcmd)
-                commands.push(slashcmd.data.toJSON())
-            }}catch(err){}
+    try{
+        const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
+        for (const file of slashFiles){
+        const slashcmd = require(`./slash/${file}`)
+        client.slashcommands.set(slashcmd.data.name, slashcmd)
+        commands.push(slashcmd.data.toJSON())
+    }}catch(err){console.log(err)}
 
-            const rest = new REST({ version: "9" }).setToken(TOKEN)
-            rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild.id), {body: commands})
-            .then(() => {
-                console.log(`Successfully reloaded commands to ${guild.name}!`)
-            })
+    fs.truncate('./guilds.txt', 0, function(){console.log('Emptying guilds.txt file done')})
+
+    await client.guilds.cache.forEach(guild => {
+       
+        const rest = new REST({ version: "9" }).setToken(TOKEN)
+        rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild.id), {body: commands})
+        .then(() => {
+            console.log(`Successfully loaded commands to ${guild.name}!`)
+        })
+        .catch((err) => {
+            console.log(err)
+        })
 
             //Just to keep track of all guilds bot is in
+
+            content = `${guild.name} : ${guild.id} \n`
+            
 
             fs.appendFile('./guilds.txt', content, err => {
                 if (err) {
@@ -172,9 +173,8 @@ for (const file of slashFiles){
                 }
                 //file written successfully
             })
-        .catch((err) => {
+
         })
-    })
 
     })
 
@@ -201,7 +201,8 @@ for (const file of slashFiles){
 
         const ID = guild.id;
 
-        try{const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
+        try{
+            const slashFiles = fs.readdirSync("./slash").filter(file => file.endsWith(".js"))
         for (const file of slashFiles){
             const slashcmd = require(`./slash/${file}`)
             client.slashcommands.set(slashcmd.data.name, slashcmd)
